@@ -1,0 +1,4 @@
+handlers/*.pyc
+lib/*.pyc
+util/*.pyc
+*.pyc
