@@ -91,10 +91,10 @@ class ZY2Handler(BaseHandler):
         status = 1
         try:
             remote_ip = self.request.remote_ip
-            if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
-                log.info("[%s], errorip:[%s], query:[%s]" % ('ivr-zyhl1001-2,5', remote_ip, self.request.query))
-                self.write('')
-                return
+            # if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
+            #     log.info("[%s], errorip:[%s], query:[%s]" % ('ivr-zyhl1001-2,5', remote_ip, self.request.query))
+            #     self.write('')
+            #     return
             linkid = self.get_argument("linkid", None)
             cmdid = self.get_argument("cmdid", None)
             mobile = self.get_argument("mobileid", None)
@@ -114,6 +114,10 @@ class ZY2Handler(BaseHandler):
                 servicecode = "smsdb-zyhl1001-5-3"
             elif cmdid == 'DMT6':
                 servicecode = "smsdb-zyhl1001-5-4"
+            elif cmdid == 'DMM4':
+                servicecode = "smsdb-zyhl1001-5-5"
+            elif cmdid == 'DMM3':
+                servicecode = "smsdb-zyhl1001-5-6"
             else:
                 orderlog.info("receive:[%s],[%s],[%s],[%s],[%s],error" % (linkid, 0, servicecode, self.request.uri, self.request.query))
                 return
