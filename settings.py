@@ -1,7 +1,7 @@
 import os
 
 mysql_settings = dict(
-            host="127.0.0.1",
+            host="localhost",
             user="lemon",
             passwd="lemon001)(",
             db="lemon",
@@ -18,7 +18,7 @@ app_config = dict(
 database = 'mysql'
 
 settings = dict(
-            port=8880,
+            port=7001,
             debug=True,
             autoescape=None,
             xsrf_cookies=False,
