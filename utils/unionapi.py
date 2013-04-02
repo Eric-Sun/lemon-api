@@ -9,11 +9,13 @@ webownerScaleDic = dict()
 webownerServiceInfoDic = dict()
 whitelist = ''
 
+
 def initBasic():
     global adownerDic, webownerScaleDic, whitelist, lock
     log.info('init basic start')
 
-    adownerList = db.query('SELECT pid, gateway, servicefee, ownerfee, servicecode, ordercode, orderdest from lem_adowner_code where status = 1')
+    adownerList = db.query(
+        'SELECT pid, gateway, servicefee, ownerfee, servicecode, ordercode, orderdest,msg_count from lem_adowner_code where status = 1')
     lock.acquire()
     adownerDic.clear
     for adowner in adownerList:
@@ -26,7 +28,6 @@ def initBasic():
     for webownerScale in webownerScaleList:
         webownerScaleDic["%s-%s" % (webownerScale.pid, webownerScale.wid)] = webownerScale
     lock.release()
-
 
     webownerServiceInfoList = db.query('SELECT wid, channel, serviceurl from lem_webowner_serviceinfo where status = 1')
     lock.acquire()
@@ -43,8 +44,10 @@ def initBasic():
 
     log.info('init basic end')
 
+
 def getAdownerCode(servicecode):
     return adownerDic.get(servicecode)
+
 
 def getWebownerServiceUrl(wid, channel):
     serviceinfo = webownerServiceInfoDic.get('%s-%s' % (wid, channel))
@@ -52,6 +55,7 @@ def getWebownerServiceUrl(wid, channel):
         return serviceinfo.get('serviceurl')
     else:
         return None
+
 
 def getWebownerScale(pid, wid):
     return webownerScaleDic.get('%s-%s' % (pid, wid))
@@ -61,17 +65,17 @@ def serviceProcess(msg):
     try:
         pid = 10
         wid = 1000
-        channel = ""    
-        adid = "1000"    
-        
+        channel = ""
+        adid = "1000"
+
         servicecode = msg.get('servicecode')
         mobile = msg.get('mobile')
-        feeFlag = 1    
-        adownerCode = getAdownerCode(servicecode)    
+        feeFlag = 1
+        adownerCode = getAdownerCode(servicecode)
         if adownerCode is None:
             log.info("feecenter servicecode is null: " + servicecode + ". adownerDic = " + str(adownerDic))
             adownerCode = dict()
-        
+
         pid = adownerCode.get("pid")
         gateway = adownerCode.get("gateway")
         ordercode = adownerCode.get('ordercode')
@@ -85,15 +89,16 @@ def serviceProcess(msg):
                 wid = webowner.wid
                 channel = webowner.channel
         elif pid == 11:
-            webowner = db.get("select wid, channel from lem_ivr_info where orderdest = %s", orderdest+ordercode)
+            webowner = db.get("select wid, channel from lem_ivr_info where orderdest = %s", orderdest + ordercode)
             if webowner:
                 wid = webowner.wid
                 channel = webowner.channel
         else:
             order = None
             try:
-                order = db.get("select * from Lez_sms_orderlog where mobile = ? and servicecode = ? order by subtime desc limit 1",
-                                mobile, servicecode)    
+                order = db.get(
+                    "select * from Lez_sms_orderlog where mobile = ? and servicecode = ? order by subtime desc limit 1",
+                    mobile, servicecode)
                 if order:
                     orderid = order.get('id')
                     db.execute("update sms_order_log set flag = 1 where flag = 0 and id='" + orderid + "'")
@@ -102,9 +107,9 @@ def serviceProcess(msg):
 
             if order:
                 wid = order.get('wid')
-                channel = order.get('channel')    
+                channel = order.get('channel')
                 adid = order.get('adid')
-        
+
         if not isWhiteMobile(mobile) and isWebNeedDeduct(pid, wid):
             feeFlag = 0
 
@@ -112,15 +117,17 @@ def serviceProcess(msg):
         ownerfee = adownerCode.get("ownerfee")
         totalincome = 0
         feeincome = 0
-        
+
         if pid == 10:
-            starttime = msg.get('starttime')    
-            endtime = msg.get('endtime')    
+            starttime = msg.get('starttime')
+            endtime = msg.get('endtime')
             ivrtotal = msg.get('ivrtotal')
             records = int(math.ceil(float(ivrtotal) / msg.get('ivrunit', 180)))
             totalincome = records * servicefee
             feeincome = records * ownerfee
-            sql = "insert lez_ivr_detail(id,wid,channel,mobile,servicecode,orderdest,starttime,endtime,total,totalincome, feeincome, feeflag, subtime) values('%s',%s,'%s','%s','%s','%s','%s','%s',%s,%s,%s,%s,'%s')" % (serviceOrderId, wid, channel,mobile,servicecode,orderdest,starttime,endtime,ivrtotal,totalincome, feeincome, feeFlag, serviceSubTime)
+            sql = "insert lez_ivr_detail(id,wid,channel,mobile,servicecode,orderdest,starttime,endtime,total,totalincome, feeincome, feeflag, subtime) values('%s',%s,'%s','%s','%s','%s','%s','%s',%s,%s,%s,%s,'%s')" % (
+                serviceOrderId, wid, channel, mobile, servicecode, orderdest, starttime, endtime, ivrtotal, totalincome,
+                feeincome, feeFlag, serviceSubTime)
 
             db.execute(sql)
 
@@ -128,7 +135,20 @@ def serviceProcess(msg):
             totalincome = servicefee
             feeincome = ownerfee
 
-        sql = "insert into lez_service_log(id,wid,channel,servicecode,pid,mobile,adid,totalincome,feeincome,status,statusstring,feeflag,gateway,subtime,ordercode,orderdest) values('%s',%s,'%s','%s',%s,'%s','%s',%s,%s,'%s','%s',%s,%s,'%s','%s','%s')" % (serviceOrderId, wid, channel,servicecode,pid,mobile,adid,totalincome,feeincome,msg.get('status'),msg.get('statusstring'),feeFlag,gateway,serviceSubTime,ordercode,orderdest)
+        # check the msg_count == today_count
+        if adownerCode.get("msg_count") != 0:
+            sql = "select today_count from lem_adowner_code where servicecode='%s'" % (servicecode,);
+            today_count = db.getint(sql);
+            if today_count >= adownerCode.get("msg_count"):
+                log.info("%s 's msg_count=%s, today_count=%s" % (pid, adownerCode.get("msg_count"), today_count))
+                return
+
+            sql = "update lem_adowner_code set today_count=today_count+1 where pid='%s'" % (pid,)
+            db.execute(sql)
+
+        sql = "insert into lez_service_log(id,wid,channel,servicecode,pid,mobile,adid,totalincome,feeincome,status,statusstring,feeflag,gateway,subtime,ordercode,orderdest) values('%s',%s,'%s','%s',%s,'%s','%s',%s,%s,'%s','%s',%s,%s,'%s','%s','%s')" % (
+            serviceOrderId, wid, channel, servicecode, pid, mobile, adid, totalincome, feeincome, msg.get('status'),
+            msg.get('statusstring'), feeFlag, gateway, serviceSubTime, ordercode, orderdest)
         db.execute(sql)
 
         if feeFlag == 1:
@@ -137,10 +157,13 @@ def serviceProcess(msg):
     except:
         log.error("serviceprocess error:%s" % lang.trace_back())
 
+
 def isWhiteMobile(mobile):
     return True if whitelist.find(mobile) > -1 else False
 
+
 statMap = dict()
+
 
 def isWebNeedDeduct(pid, wid):
     wid = int(wid)
@@ -162,7 +185,7 @@ def isWebNeedDeduct(pid, wid):
         total = statMap.get(key)
         total = total + 1 if total else 1
         statMap[key] = total
-        
+
         if (total % offBase + offNo) >= offBase:
             flag = True
     except:
@@ -175,7 +198,8 @@ def forwardToWebowner(wid, channel, serviceOrderId, mobile, orderdest, ordercode
         serviceurl = getWebownerServiceUrl(wid, channel)
 
         if serviceurl:
-            serviceurl = '%s?linkid=%s&mobile=%s&orderdest=%s&cmdid=%s&fee=%s' % (serviceurl, serviceOrderId, mobile, orderdest, ordercode, fee)
+            serviceurl = '%s?linkid=%s&mobile=%s&orderdest=%s&cmdid=%s&fee=%s' % (
+                serviceurl, serviceOrderId, mobile, orderdest, ordercode, fee)
             webRequestQueue.put(serviceurl)
             log.info('forwardToWebowner:[%s]' % (serviceurl))
     except:

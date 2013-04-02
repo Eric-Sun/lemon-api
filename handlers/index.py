@@ -1,6 +1,7 @@
 from base import BaseHandler
 from utils import unionapi
 from lib.base import route
+from handlers import db, log, webRequestQueue
 
 @route(r'/common/reloadCacheApi')
 class RefreshCacheHandler(BaseHandler):
@@ -17,6 +18,13 @@ class RefreshCacheHandler(BaseHandler):
             self.finish('ok--%d-%d' % (offNo, offBase))
         else:
             self.finish('')
+
+@route(r'/common/clearData')
+class ClearData(BaseHandler):
+    def get(self):
+        sql = "update lem_adowner_code set msg_today=0";
+        db.execute(sql);
+        log.info(" clear data ok.")
 
 import tornado
 #@route(r'.*')
