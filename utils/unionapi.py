@@ -7,15 +7,16 @@ lock = allocate_lock()
 adownerDic = dict()
 webownerScaleDic = dict()
 webownerServiceInfoDic = dict()
+webownerMsgCountDic = dict()
 whitelist = ''
 
 
 def initBasic():
-    global adownerDic, webownerScaleDic, whitelist, lock
+    global adownerDic, webownerScaleDic, whitelist, lock, webownerMsgCountDic
     log.info('init basic start')
 
     adownerList = db.query(
-        'SELECT pid, gateway, servicefee, ownerfee, servicecode, ordercode, orderdest,msg_count from lem_adowner_code where status = 1')
+        'SELECT pid, gateway, servicefee, ownerfee, servicecode, ordercode, orderdest from lem_adowner_code where status = 1')
     lock.acquire()
     adownerDic.clear
     for adowner in adownerList:
@@ -36,13 +37,21 @@ def initBasic():
         webownerServiceInfoDic["%s-%s" % (webownerServiceInfo.wid, webownerServiceInfo.channel)] = webownerServiceInfo
     lock.release()
 
-    whitelist = db.get('SELECT brief from lem_news where id = 162')
-    if whitelist:
-        whitelist = whitelist.brief
-    else:
-        whitelist = ''
+    msgCountList = db.query('select wid,msg_count from lem_webowner')
+    lock.acquire()
+    webownerMsgCountDic.clear()
+    for msgCount in msgCountList:
+        webownerMsgCountDic[msgCount.wid] = msgCount.msg_count
+    lock.release()
 
-    log.info('init basic end')
+
+whitelist = db.get('SELECT brief from lem_news where id = 162')
+if whitelist:
+    whitelist = whitelist.brief
+else:
+    whitelist = ''
+
+log.info('init basic end')
 
 
 def getAdownerCode(servicecode):
@@ -136,15 +145,21 @@ def serviceProcess(msg):
             feeincome = ownerfee
 
         # check the msg_count == today_count
-        if adownerCode.get("msg_count") != 0:
-            sql = "select today_count from lem_adowner_code where servicecode='%s'" % (servicecode,);
-            today_count = db.getint(sql);
-            if today_count >= adownerCode.get("msg_count"):
-                log.info("%s 's msg_count=%s, today_count=%s" % (pid, adownerCode.get("msg_count"), today_count))
-                return
 
-            sql = "update lem_adowner_code set today_count=today_count+1 where pid='%s'" % (pid,)
-            db.execute(sql)
+        webownerMsgCount = webownerMsgCountDic[wid]
+        if webownerMsgCount != 0:
+            log.info(
+                "msg_count=%s.do check. wid=%s, servicecode=%s" % (webownerMsgCount, wid, servicecode))
+            sql = "select today_count from lem_webowner where wid='%s'" % (wid,);
+            today_count = db.getint(sql);
+            if today_count >= webownerMsgCount:
+                log.info("%s 's msg_count=%s, today_count=%s" % (wid, webownerMsgCount, today_count))
+                feeFlag = 0
+            else:
+                sql = "update lem_webowner set today_count=today_count+1 where wid='%s'" % (wid,)
+                db.execute(sql)
+        else:
+            log.info("msg_count=0. jump. wid=%s servicecode=%s" % (wid, servicecode))
 
         sql = "insert into lez_service_log(id,wid,channel,servicecode,pid,mobile,adid,totalincome,feeincome,status,statusstring,feeflag,gateway,subtime,ordercode,orderdest) values('%s',%s,'%s','%s',%s,'%s','%s',%s,%s,'%s','%s',%s,%s,'%s','%s','%s')" % (
             serviceOrderId, wid, channel, servicecode, pid, mobile, adid, totalincome, feeincome, msg.get('status'),

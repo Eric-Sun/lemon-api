@@ -22,7 +22,7 @@ class RefreshCacheHandler(BaseHandler):
 @route(r'/common/clearData')
 class ClearData(BaseHandler):
     def get(self):
-        sql = "update lem_adowner_code set msg_today=0";
+        sql = "update lem_webowner set today_count=0";
         db.execute(sql);
         log.info(" clear data ok.")
 

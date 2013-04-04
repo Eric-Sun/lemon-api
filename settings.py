@@ -4,7 +4,7 @@ mysql_settings = dict(
             host="localhost",
             user="lemon",
             passwd="lemon001)(",
-            db="lemon",
+            db="lemon2",
 )
 
 database_types = dict(
