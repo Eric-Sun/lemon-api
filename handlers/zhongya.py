@@ -12,10 +12,10 @@ class ZYHandler(BaseHandler):
         status = 1
         try:
             remote_ip = self.request.remote_ip
-            if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
-                log.info("[%s], errorip:[%s], query:[%s]" % (servicecode, remote_ip, self.request.query))
-                self.write('')
-                return
+            # if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
+            #     log.info("[%s], errorip:[%s], query:[%s]" % (servicecode, remote_ip, self.request.query))
+            #     self.write('')
+            #     return
 
             mobile = self.get_argument("mobile", None)
             orderdest = self.get_argument("lnum", None)
@@ -52,10 +52,10 @@ class ZYIVR2Handler(BaseHandler):
         status = 1
         try:
             remote_ip = self.request.remote_ip
-            if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
-                log.info("[%s], errorip:[%s], query:[%s]" % (servicecode, remote_ip, self.request.query))
-                self.write('')
-                return
+            # if remote_ip != '211.151.66.84' and remote_ip != '127.0.0.1':
+            #     log.info("[%s], errorip:[%s], query:[%s]" % (servicecode, remote_ip, self.request.query))
+            #     self.write('')
+            #     return
 
             mobile = self.get_argument("mobile", None)
             orderdest = self.get_argument("lnum", None)

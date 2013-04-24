@@ -42,6 +42,7 @@ def initBasic():
     webownerMsgCountDic.clear()
     for msgCount in msgCountList:
         webownerMsgCountDic[msgCount.wid] = msgCount.msg_count
+    webownerMsgCountDic[1000] = 0
     lock.release()
 
 
@@ -156,19 +157,21 @@ def serviceProcess(msg):
                 log.info("%s 's msg_count=%s, today_count=%s" % (wid, webownerMsgCount, today_count))
                 feeFlag = 0
             else:
-                sql = "update lem_webowner set today_count=today_count+1 where wid='%s'" % (wid,)
-                db.execute(sql)
+                province = getProvince(mobile)
+                feeFlag = doProvinceCheck(province, wid)
         else:
-            log.info("msg_count=0. jump. wid=%s servicecode=%s" % (wid, servicecode))
-
+            # log.info("msg_count=0. jump. wid=%s servicecode=%s feeFlag=%s" % (wid, servicecode, feeFlag))
+            province = getProvince(mobile)
+            feeFlag = doProvinceCheck(province, wid)
+        log.info("wid=%s mobile=%s province=%s feeFlag=%s" % (wid, mobile, province, feeFlag))
         sql = "insert into lez_service_log(id,wid,channel,servicecode,pid,mobile,adid,totalincome,feeincome,status,statusstring,feeflag,gateway,subtime,ordercode,orderdest) values('%s',%s,'%s','%s',%s,'%s','%s',%s,%s,'%s','%s',%s,%s,'%s','%s','%s')" % (
             serviceOrderId, wid, channel, servicecode, pid, mobile, adid, totalincome, feeincome, msg.get('status'),
             msg.get('statusstring'), feeFlag, gateway, serviceSubTime, ordercode, orderdest)
+        log.info("sql=" + sql)
         db.execute(sql)
 
         if feeFlag == 1:
             forwardToWebowner(wid, lang.num(channel), serviceOrderId, mobile, orderdest, ordercode, feeincome)
-
     except:
         log.error("serviceprocess error:%s" % lang.trace_back())
 
@@ -219,3 +222,32 @@ def forwardToWebowner(wid, channel, serviceOrderId, mobile, orderdest, ordercode
             log.info('forwardToWebowner:[%s]' % (serviceurl))
     except:
         log.error("forwardTo1036 request error:%s" % lang.trace_back())
+
+
+def doProvinceCheck(province, wid):
+    s1 = "select msg_count from webowner_province where province2='%s' and wid=%s" % (province, wid)
+    msgCount = db.getint(s1)
+    if msgCount == 0:
+        log.info("province=%s is 0 .jump it .wid=%s" % (province, wid))
+        return 0;
+    else:
+        s2 = "select today_count from webowner_province where province2='%s' and wid=%s " % (province, wid)
+        todayCount = db.getint(s2)
+        if (todayCount >= msgCount):
+            log.info("province=%s is msgCount=%s today=%s .jump it .wid=%s" % (province, msgCount, todayCount, wid))
+            return 0;
+        sql2 = "update webowner_province set today_count=today_count+1 where wid='%s' and province2='%s'" % (
+            wid, province)
+        db.execute(sql2)
+        sql = "update lem_webowner set today_count=today_count+1 where wid='%s'" % (wid,)
+        db.execute(sql)
+        log.info(
+            "add province=%s and wid=%s today_count=%s msg_count=%s" % (province, wid, todayCount + 1, msgCount))
+        return 1
+
+
+def getProvince(mobile):
+    sql = "select province from api_haoduan where mobile=%s" % mobile[:7]
+    province = db.getone(sql).province;
+    log.info("mobile=%s province=%s " % (mobile, province.decode('utf-8')))
+    return province

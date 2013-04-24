@@ -4,7 +4,7 @@ import itertools
 import logging
 import time
 import datetime
-
+import sys
 try:
     import MySQLdb
 except:
@@ -14,6 +14,8 @@ try:
     import sqlite3
 except:
     pass
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 def connect(jclassname, **args):
     #sys.path.append(os.getcwd()+'')
