@@ -24,6 +24,8 @@ class ClearData(BaseHandler):
     def get(self):
         sql = "update lem_webowner set today_count=0";
         db.execute(sql);
+        sql = "update webowner_province set today_count=0";
+        db.execute(sql);
         log.info(" clear data ok.")
 
 import tornado

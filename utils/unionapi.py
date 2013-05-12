@@ -1,3 +1,4 @@
+#-*- coding: UTF-8 -*-
 from handlers import db, log, webRequestQueue
 from thread import allocate_lock
 from lib import lang
@@ -146,28 +147,35 @@ def serviceProcess(msg):
             feeincome = ownerfee
 
         # check the msg_count == today_count
-
+        province = ''
         webownerMsgCount = webownerMsgCountDic[wid]
         if webownerMsgCount != 0:
             log.info(
-                "msg_count=%s.do check. wid=%s, servicecode=%s" % (webownerMsgCount, wid, servicecode))
+                "webowner msg_count=%s.do check. wid=%s, servicecode=%s mobile=%s serviceOrderId=%s" % (
+                    webownerMsgCount, wid, servicecode, mobile, serviceOrderId))
             sql = "select today_count from lem_webowner where wid='%s'" % (wid,);
             today_count = db.getint(sql);
             if today_count >= webownerMsgCount:
-                log.info("%s 's msg_count=%s, today_count=%s" % (wid, webownerMsgCount, today_count))
+                log.info(
+                    "webowner msg_count fail.reject it. %s 's msg_count=%s, today_count=%s mobile=%s serviceOrderId=%s" % (
+                        wid, webownerMsgCount, today_count, mobile, serviceOrderId))
                 feeFlag = 0
             else:
                 province = getProvince(mobile)
-                feeFlag = doProvinceCheck(province, wid)
+                feeFlag = doProvinceCheck(province, wid, mobile, serviceOrderId, feeFlag)
         else:
             # log.info("msg_count=0. jump. wid=%s servicecode=%s feeFlag=%s" % (wid, servicecode, feeFlag))
+            log.info(
+                "webowner msg_count=0. do check province.wid=%s servicecode=%s mobile=%s serviceOrderId=%s" % (
+                    wid, servicecode, mobile, serviceOrderId))
             province = getProvince(mobile)
-            feeFlag = doProvinceCheck(province, wid)
-        log.info("wid=%s mobile=%s province=%s feeFlag=%s" % (wid, mobile, province, feeFlag))
+            feeFlag = doProvinceCheck(province, wid, mobile, serviceOrderId, feeFlag)
+
+        log.info("wid=%s mobile=%s province=%s feeFlag=%s serviceOrderId=%s" % (
+        wid, mobile, province, feeFlag, serviceOrderId))
         sql = "insert into lez_service_log(id,wid,channel,servicecode,pid,mobile,adid,totalincome,feeincome,status,statusstring,feeflag,gateway,subtime,ordercode,orderdest) values('%s',%s,'%s','%s',%s,'%s','%s',%s,%s,'%s','%s',%s,%s,'%s','%s','%s')" % (
             serviceOrderId, wid, channel, servicecode, pid, mobile, adid, totalincome, feeincome, msg.get('status'),
             msg.get('statusstring'), feeFlag, gateway, serviceSubTime, ordercode, orderdest)
-        log.info("sql=" + sql)
         db.execute(sql)
 
         if feeFlag == 1:
@@ -224,30 +232,39 @@ def forwardToWebowner(wid, channel, serviceOrderId, mobile, orderdest, ordercode
         log.error("forwardTo1036 request error:%s" % lang.trace_back())
 
 
-def doProvinceCheck(province, wid):
-    s1 = "select msg_count from webowner_province where province2='%s' and wid=%s" % (province, wid)
+def doProvinceCheck(province, wid, mobile, serviceOrderId, feeFlag):
+    s1 = "select ifnull(msg_count,0) from webowner_province where province2='%s' and wid=%s" % (province, wid)
     msgCount = db.getint(s1)
     if msgCount == 0:
-        log.info("province=%s is 0 .jump it .wid=%s" % (province, wid))
-        return 0;
+        log.info("province province=%s is 0 .jump it .wid=%s mobile=%s serviceOrderId=%s" % (
+            province, wid, mobile, serviceOrderId))
+        sql2 = "update webowner_province set today_count=today_count+1 where wid=%s and province2='%s'" % (
+            wid, province)
+        db.execute(sql2)
+        sql = "update lem_webowner set today_count=today_count+1 where wid=%s" % (wid,)
+        db.execute(sql)
+        return feeFlag;
     else:
         s2 = "select today_count from webowner_province where province2='%s' and wid=%s " % (province, wid)
         todayCount = db.getint(s2)
         if (todayCount >= msgCount):
-            log.info("province=%s is msgCount=%s today=%s .jump it .wid=%s" % (province, msgCount, todayCount, wid))
+            log.info(
+                "province check fail. province=%s is msgCount=%s today=%s .reject it .wid=%s mobile=%s serviceOrderId=%s" % (
+                    province, msgCount, todayCount, wid, mobile, serviceOrderId))
             return 0;
-        sql2 = "update webowner_province set today_count=today_count+1 where wid='%s' and province2='%s'" % (
+        sql2 = "update webowner_province set today_count=today_count+1 where wid=%s and province2='%s'" % (
             wid, province)
         db.execute(sql2)
-        sql = "update lem_webowner set today_count=today_count+1 where wid='%s'" % (wid,)
+        sql = "update lem_webowner set today_count=today_count+1 where wid=%s" % (wid,)
         db.execute(sql)
         log.info(
-            "add province=%s and wid=%s today_count=%s msg_count=%s" % (province, wid, todayCount + 1, msgCount))
-        return 1
+            "province add province=%s and wid=%s today_count=%s msg_count=%s mobile=%s serviceOrderId=%s" % (
+                province, wid, todayCount + 1, msgCount, mobile, serviceOrderId))
+        return feeFlag
 
 
 def getProvince(mobile):
-    sql = "select province from api_haoduan where mobile=%s" % mobile[:7]
+    sql = "select ifnull(province,'未知') as province from api_haoduan where mobile=%s" % mobile[:7]
     province = db.getone(sql).province;
     log.info("mobile=%s province=%s " % (mobile, province.decode('utf-8')))
     return province

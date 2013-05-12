@@ -3,3 +3,16 @@ python2.7
 tornado
 MySQLdb
 Jinjai
+
+
+
+test：
+1. msg_count=0 province_msg_count=0 today_count=0   ok
+2. msg_count=0 province_msg_count=1 today_count=0   ok
+3. msg_count=0 province_msg_count=1 today_count=1   ok
+4. msg_count=1 province_msg_count=0 today_count=0   ok
+5. msg_count=1 province_msg_count=1 today_count=0   ok
+6. msg_count=1 province_msg_count=1 today_count=1   ok
+7. 未知号码
+
+localhost:7001/spimpl/smsdb/10658032/receive?mobileid=13965361104&linkid=12083328743096571998&state=DELIVRD&cmdid=DMM4
