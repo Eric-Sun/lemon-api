@@ -7,6 +7,7 @@ import datetime
 import StringIO
 from xml.dom import minidom
 
+
 @route(r'/spimpl/ivr/lbxz/receive')
 class LBXZHandler(BaseHandler):
     def get(self):
@@ -27,20 +28,20 @@ class LBXZHandler(BaseHandler):
             endtime = starttime + datetime.timedelta(minutes=ivrtotal)
             endtime = endtime.strftime('%Y-%m-%d %H:%M:%S')
             starttime = starttime.strftime('%Y-%m-%d %H:%M:%S')
-            serviceOrderId=lang.uuid()
+            serviceOrderId = lang.uuid()
 
             msg = dict(
-                    serviceOrderId=serviceOrderId,
-                    servicecode=servicecode,
-                    status=1,
-                    statusstring='',
-                    mobile=mobile,
-                    orderdest=orderdest,
-                    starttime=starttime,
-                    endtime=endtime,
-                    ivrtotal=ivrtotal,
-                    ivrunit=60,
-                )
+                serviceOrderId=serviceOrderId,
+                servicecode=servicecode,
+                status=1,
+                statusstring='',
+                mobile=mobile,
+                orderdest=orderdest,
+                starttime=starttime,
+                endtime=endtime,
+                ivrtotal=ivrtotal,
+                ivrunit=60,
+            )
 
             orderlog.info("receive:[%s],[%s],[%s],[%s],ok" % (serviceOrderId, servicecode, self.request.query))
             #unionapi.serviceProcess(msg)
@@ -68,7 +69,7 @@ class LBXZHandler(BaseHandler):
             #serviceId = xmldoc.getElementsByTagName('serviceId')[0].firstChild.data
             #fee = xmldoc.getElementsByTagName('fee')[0].firstChild.data
             #tradeId = xmldoc.getElementsByTagName('tradeId')[0].firstChild.data
-            tradeId=lang.uuid()
+            tradeId = lang.uuid()
             startTime = xmldoc.getElementsByTagName('startTime')[0].firstChild.data
             starttime = datetime.datetime.strptime(startTime, '%Y%m%d%H%M%S')
             endTime = xmldoc.getElementsByTagName('endTime')[0].firstChild.data
@@ -79,17 +80,17 @@ class LBXZHandler(BaseHandler):
             #verify = hashlib.md5('%s%s%s' % (callNum, endTime, serviceKey)).hexdigest()
 
             msg = dict(
-                    serviceOrderId=tradeId,
-                    servicecode=servicecode,
-                    status=1,
-                    statusstring='',
-                    mobile=callNum,
-                    orderdest=calledNum,
-                    starttime=starttime,
-                    endtime=endtime,
-                    ivrtotal=30,
-                    ivrunit=60,
-                )
+                serviceOrderId=tradeId,
+                servicecode=servicecode,
+                status=1,
+                statusstring='',
+                mobile=callNum,
+                orderdest=calledNum,
+                starttime=starttime,
+                endtime=endtime,
+                ivrtotal=30,
+                ivrunit=60,
+            )
             orderlog.info("receive:[%s],[%s],[%s],[%s],ok" % (tradeId, servicecode, self.request.uri, content))
             unionapi.serviceProcess(msg)
         except:
@@ -97,13 +98,51 @@ class LBXZHandler(BaseHandler):
         finally:
             self.finish('<?xml version = "1.0" encoding="utf-8"?><spserviceresp><status>ok</status></spserviceresp>')
 
+
+@route(r'/spimpl/ivr/lbxz/receive2')
+class LBXZ2Handler(BaseHandler):
+    def get(self):
+        servicecode = "ivr-lbxz1002-2"
+        try:
+            remote_ip = self.request.remote_ip
+
+            mobile = self.get_argument("mobile", None)
+            orderdest = self.get_argument("spnumber", None)
+            ivrtotal = self.get_argument("validtime", None)
+            linkid = self.get_argument("linkid", None);
+            ivrtotal = lang.num(ivrtotal)
+            endtime = "1"
+            starttime = "1"
+            serviceOrderId = linkid
+
+            msg = dict(
+                serviceOrderId=serviceOrderId,
+                servicecode=servicecode,
+                status=1,
+                statusstring='',
+                mobile=mobile,
+                orderdest=orderdest,
+                starttime=starttime,
+                endtime=endtime,
+                ivrtotal=ivrtotal,
+                ivrunit=60,
+            )
+
+            orderlog.info("receive:[%s],[%s],[%s],ok" % (serviceOrderId, servicecode, self.request.query))
+            unionapi.serviceProcess(msg)
+        except:
+            orderlog.error("receive:[%s],[%s],[%s],err" % (servicecode, self.request.query, lang.trace_back()))
+        finally:
+            self.finish('OK')
+
+
 @route(r'/spimpl/ivr/hnxl/receive')
 class HNXLHandler(BaseHandler):
     def get(self):
         servicecode = "ivr-hnxl1003"
         try:
             report = self.get_argument("report", None)
-            if(report != 'DELIVRD'):
+            if (report != 'DELIVRD'):
                 return
 
             mobile = self.get_argument("mobile", None)
@@ -113,28 +152,29 @@ class HNXLHandler(BaseHandler):
                 momsg = momsg[5:]
             else:
                 momsg = '0'
-            orderdest = orderdest+momsg
+            orderdest = orderdest + momsg
             ivrtotal = 30
             endtime = datetime.datetime.now()
             endtime = endtime.strftime('%Y-%m-%d %H:%M:%S')
             starttime = datetime.datetime.now()
             starttime = starttime.strftime('%Y-%m-%d %H:%M:%S')
-            serviceOrderId=lang.uuid()
+            serviceOrderId = lang.uuid()
 
             msg = dict(
-                    serviceOrderId=serviceOrderId,
-                    servicecode=servicecode,
-                    status=1,
-                    statusstring='',
-                    mobile=mobile,
-                    orderdest=orderdest,
-                    starttime=starttime,
-                    endtime=endtime,
-                    ivrtotal=ivrtotal,
-                    ivrunit=9999,
-                )
+                serviceOrderId=serviceOrderId,
+                servicecode=servicecode,
+                status=1,
+                statusstring='',
+                mobile=mobile,
+                orderdest=orderdest,
+                starttime=starttime,
+                endtime=endtime,
+                ivrtotal=ivrtotal,
+                ivrunit=9999,
+            )
 
-            orderlog.info("receive:[%s],[%s],[%s],[%s],ok" % (serviceOrderId, servicecode, orderdest, self.request.query))
+            orderlog.info(
+                "receive:[%s],[%s],[%s],[%s],ok" % (serviceOrderId, servicecode, orderdest, self.request.query))
             unionapi.serviceProcess(msg)
         except:
             orderlog.error("receive:[%s],[%s],[%s],err" % (servicecode, self.request.query, lang.trace_back()))

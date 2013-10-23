@@ -95,15 +95,17 @@ def serviceProcess(msg):
         serviceSubTime = lang.now()
         if pid == 10:
             orderdest = msg.get('orderdest')
-            webowner = db.get("select wid, channel from lem_ivr_info where orderdest = %s", orderdest)
+            webowner = db.get("select i.wid, i.channel,a.adownerid from lem_ivr_info i,lem_adowner_code a where a.servicecode=i.servicecode and i.orderdest = %s", orderdest)
             if webowner:
                 wid = webowner.wid
                 channel = webowner.channel
+                adid = webowner.adownerid
         elif pid == 11:
-            webowner = db.get("select wid, channel from lem_ivr_info where orderdest = %s", orderdest + ordercode)
+            webowner = db.get("select i.wid, i.channel,a.adownerid from lem_ivr_info i,lem_adowner_code a where a.servicecode=i.servicecode and i.orderdest = %s", orderdest + ordercode)
             if webowner:
                 wid = webowner.wid
                 channel = webowner.channel
+                adid = webowner.adownerid
         else:
             order = None
             try:

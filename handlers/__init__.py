@@ -19,10 +19,11 @@ from utils import unionapi
 unionapi.initBasic()
 
 from lib.base import Application
-from handlers import index, lanbo, zhongya, ningjuli
+from handlers import index, lanbo, zhongya, ningjuli,yihui
 
 application = Application(**app_config.settings)
 application.load_module(index)
 application.load_module(lanbo)
 application.load_module(zhongya)
 application.load_module(ningjuli)
+application.load_module(yihui)

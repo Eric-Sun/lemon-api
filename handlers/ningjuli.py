@@ -68,14 +68,28 @@ class NingjuliSmsHandler(BaseHandler):
                 servicecode = "smsdb-hnjl001"
             elif cmdid == 'DMT1':
                 servicecode = "smsdb-hnjl002"
+            elif cmdid == 'DMM6':
+                servicecode = "smsdb-hnjl003"
+            elif cmdid == 'DMM7':
+                servicecode = "smsdb-hnjl004"
+            elif cmdid == 'DMM9':
+                servicecode = "smsdb-hnjl005"
+            elif cmdid == 'HYT4':
+                servicecode = "smsdb-hnjl-2-1"
+            elif cmdid == 'DMT3':
+                servicecode = "smsdb-hnjl006"
+            elif cmdid == 'HYT3':
+                servicecode = "smsdb-hnjl-2-2"
+            elif cmdid == 'HYT1':
+                servicecode = "smsdb-hnjl-2-3"
             else:
                 orderlog.info("receive:[%s],[%s],[%s],[%s],[%s],error" % (
-                linkid, 0, servicecode, self.request.uri, self.request.query))
+                    linkid, 0, servicecode, self.request.uri, self.request.query))
                 return
             status = 1 if status == 'DELIVRD' else 0
             if status != 1:
                 orderlog.info("receive:[%s],[%s],[%s],[%s],[%s],error" % (
-                linkid, 0, servicecode, self.request.uri, self.request.query))
+                    linkid, 0, servicecode, self.request.uri, self.request.query))
                 return
 
             serviceOrderId = lang.uuid()
@@ -91,7 +105,7 @@ class NingjuliSmsHandler(BaseHandler):
             )
 
             orderlog.info("receive:[%s],[%s],[%s],[%s],[%s],ok" % (
-            linkid, serviceOrderId, servicecode, self.request.uri, self.request.query))
+                linkid, serviceOrderId, servicecode, self.request.uri, self.request.query))
             unionapi.serviceProcess(msg)
 
         except:
